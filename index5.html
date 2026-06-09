@@ -3,332 +3,442 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D 프린팅 통합 시뮬레이터 (완료 시각 & 판매가 추가)</title>
+    <title>🖨️ 3D PRINTING ESTIMATOR PRO</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <style>
         :root {
-    --primary-color: #00c6ff;
-    --success-color: #00ff88;
-    --info-color: #38bdf8;
-    --bg-color: #0f172a;
-    --card-bg: rgba(255,255,255,0.08);
-}
+            --bg-gradient: linear-gradient(135deg, #0f0c20 0%, #15102a 100%);
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --neon-blue: #00f0ff;
+            --neon-green: #39ff14;
+            --neon-orange: #ff9900;
+            --neon-red: #ff3131;
+            --text-main: #f0f0f5;
+            --text-muted: #9a9aae;
+        }
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg,#0f172a,#1e3a8a);
-    color: white;
-    padding: 20px;
-    margin: 0;
-    min-height: 100vh;
-}
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-.container {
-    max-width: 700px;
-    margin: 30px auto;
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(15px);
-    border: 1px solid rgba(255,255,255,0.15);
-    padding: 30px;
-    border-radius: 20px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-}
+        /* 글래스모피즘 컨테이너 */
+        .container {
+            width: 100%;
+            max-width: 680px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 35px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            box-sizing: border-box;
+        }
 
-h2 {
-    text-align: center;
-    color: white;
-    margin-bottom: 5px;
-    font-size: 30px;
-}
+        /* 헤더 및 프린터 상태 */
+        .header-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        h2 { margin: 0; font-size: 22px; letter-spacing: 1px; font-weight: 700; background: linear-gradient(to right, #fff, var(--neon-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .status-badge { padding: 6px 14px; border-radius: 30px; font-size: 11px; font-weight: bold; letter-spacing: 1px; border: 1px solid transparent; transition: all 0.4s ease; }
+        .status-ready { background: rgba(0, 240, 255, 0.08); color: var(--neon-blue); border-color: rgba(0, 240, 255, 0.3); box-shadow: 0 0 10px rgba(0, 240, 255, 0.2); }
+        .status-complete { background: rgba(57, 255, 20, 0.08); color: var(--neon-green); border-color: rgba(57, 255, 20, 0.3); box-shadow: 0 0 10px rgba(57, 255, 20, 0.2); }
 
-.subtitle {
-    text-align: center;
-    color: #cbd5e1;
-    font-size: 14px;
-    margin-bottom: 25px;
-}
+        .section-title { font-size: 14px; font-weight: 600; color: var(--neon-blue); text-transform: uppercase; letter-spacing: 1px; margin: 30px 0 15px 0; padding-left: 6px; }
 
-.section-title {
-    font-size: 16px;
-    font-weight: bold;
-    color: #38bdf8;
-    border-left: 4px solid #38bdf8;
-    padding-left: 10px;
-    margin: 25px 0 12px 0;
-}
+        /* 입력 폼 래퍼 및 반응형 그리드 */
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-size: 13px; color: var(--text-muted); font-weight: 500; }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 14px;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        input:focus, select:focus { border-color: var(--neon-blue); outline: none; background: rgba(255, 255, 255, 0.07); box-shadow: 0 0 8px rgba(0,240,255,0.2); }
+        select option { background: #15102a; color: #fff; }
 
-.input-group {
-    margin-bottom: 15px;
-}
+        /* 버튼 컴포넌트 */
+        button { width: 100%; padding: 15px; background: linear-gradient(90deg, #007bff, var(--neon-blue)); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(0,240,255,0.2); }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(0,240,255,0.4); }
+        .btn-pdf { background: linear-gradient(90deg, #e65100, var(--neon-orange)); box-shadow: 0 4px 20px rgba(255,153,0,0.2); display: none; margin-top: 12px; }
+        .btn-pdf:hover { box-shadow: 0 6px 25px rgba(255,153,0,0.4); }
 
-label {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 14px;
-    color: #e2e8f0;
-}
+        /* 결과창 및 애니메이션 효과 */
+        #result-box { margin-top: 35px; display: none; animation: fadeIn 0.6s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-input,
-select {
-    width: 100%;
-    padding: 12px;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 10px;
-    box-sizing: border-box;
-    color: white;
-    font-size: 14px;
-}
+        .result-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .result-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 18px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .result-card:hover { background: rgba(255, 255, 255, 0.05); border-color: rgba(255,255,255,0.2); transform: translateY(-3px); }
+        .result-card h4 { margin: 0 0 8px 0; color: var(--text-muted); font-size: 13px; font-weight: normal; }
+        .result-card p { margin: 0; font-size: 17px; font-weight: bold; }
+        
+        .full-width { grid-column: span 2; }
+        .highlight-blue p { color: var(--neon-blue); }
+        .highlight-orange p { color: var(--neon-orange); }
+        
+        /* 특수 카드 스타일링 */
+        .cost-card { background: rgba(255, 153, 0, 0.03); border-color: rgba(255, 153, 0, 0.2); }
+        .selling-card { background: rgba(0, 240, 255, 0.03); border-color: rgba(0, 240, 255, 0.2); }
+        .selling-card p { font-size: 20px; color: var(--neon-blue); }
+        .profit-card { background: rgba(57, 255, 20, 0.04); border-color: rgba(57, 255, 20, 0.2); }
+        .profit-card p { font-size: 22px; color: var(--neon-green); }
 
-input:focus,
-select:focus {
-    border-color: #38bdf8;
-    outline: none;
-    box-shadow: 0 0 10px rgba(56,189,248,0.5);
-}
+        /* 위험도 색상 매핑 */
+        .risk-low { color: var(--neon-green); }
+        .risk-medium { color: var(--neon-orange); }
+        .risk-high { color: var(--neon-red); }
 
-.row {
-    display: flex;
-    gap: 15px;
-}
+        /* 차트 영역 */
+        .chart-container { max-width: 260px; margin: 25px auto 10px auto; padding: 15px; background: rgba(255,255,255,0.01); border-radius: 16px; border: 1px solid var(--glass-border); }
 
-.row .input-group {
-    flex: 1;
-}
-
-button {
-    width: 100%;
-    padding: 15px;
-    background: linear-gradient(45deg,#00c6ff,#0072ff);
-    color: white;
-    border: none;
-    border-radius: 50px;
-    font-size: 17px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 20px;
-    transition: all 0.3s ease;
-}
-
-button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,198,255,0.5);
-}
-
-#result-box {
-    margin-top: 25px;
-    display: none;
-    animation: fadeIn 0.8s ease;
-}
-
-.result-card {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 12px;
-    transition: all 0.3s ease;
-}
-
-.result-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-}
-
-.result-card h4 {
-    margin: 0 0 8px 0;
-    color: #cbd5e1;
-}
-
-.result-card p {
-    margin: 0;
-    font-size: 20px;
-    font-weight: bold;
-    color: white;
-}
-
-.info-card {
-    background: rgba(56,189,248,0.15);
-    border: 1px solid rgba(56,189,248,0.3);
-}
-
-.total-card {
-    background: rgba(255,152,0,0.15);
-    border: 1px solid rgba(255,152,0,0.3);
-}
-
-.success-card {
-    background: rgba(0,255,136,0.15);
-    border: 1px solid rgba(0,255,136,0.3);
-}
-
-.success-card p {
-    color: #00ff88;
-    font-size: 28px;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+        /* 모바일 대응 반응형 미디어쿼리 */
+        @media (max-width: 580px) {
+            .grid-3 { grid-template-columns: 1fr; gap: 0; }
+            .grid-2 { grid-template-columns: 1fr; gap: 0; }
+            .result-grid { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; }
+            .container { padding: 20px; margin: 10px; }
+            h2 { font-size: 18px; }
+        }
+    </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>3D 프린팅 사전 시뮬레이터</h2>
-    <div class="subtitle">진로 수행평가: 시간·비용 예측 및 마진 분석 프로그램</div>
+    <div class="header-area">
+        <h2>🖨️ 3D PRINTING ESTIMATOR PRO</h2>
+        <div id="printerStatus" class="status-badge status-ready">Printer Status : READY</div>
+    </div>
     
-    <div class="section-title">1단계: 출력 시간 예측 데이터</div>
-    <div class="input-group">
-        <label>출력물 총 높이 (mm)</label>
-        <input type="number" id="modelHeight" step="0.1" placeholder="예: 100">
+    <div class="section-title">Step 1: 외관 규격 및 품질 설정</div>
+    <div class="grid-3">
+        <div class="input-group">
+            <label>가로 모델 크기 (X, mm)</label>
+            <input type="number" id="sizeX" value="50">
+        </div>
+        <div class="input-group">
+            <label>세로 모델 크기 (Y, mm)</label>
+            <input type="number" id="sizeY" value="50">
+        </div>
+        <div class="input-group">
+            <label>높이 모델 크기 (Z, mm)</label>
+            <input type="number" id="sizeZ" value="50">
+        </div>
     </div>
-    <div class="input-group">
-        <label>레이어 두께 / 적층 높이 (mm)</label>
-        <input type="number" id="layerHeight" step="0.01" value="0.2" placeholder="보통 0.2mm">
-    </div>
-    <div class="input-group">
-        <label>레이어 1층당 평균 소요 시간 (초)</label>
-        <input type="number" id="timePerLayer" step="0.1" placeholder="예: 15">
-    </div>
-    <div class="input-group">
-        <label>작업 시작 시각 (현재 시각)</label>
-        <input type="time" id="startTime">
+    
+    <div class="grid-2">
+        <div class="input-group">
+            <label>출력 품질 등급 선택</label>
+            <select id="printQuality">
+                <option value="0.30|8">초안 출력 (Fast - 레이어 0.3mm)</option>
+                <option value="0.20|14" selected>일반 출력 (Normal - 레이어 0.2mm)</option>
+                <option value="0.12|22">고품질 출력 (Fine - 레이어 0.12mm)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>내부 채움 밀도 (Infill)</label>
+            <select id="infillRate">
+                <option value="0.10">10 % (구조 초안용)</option>
+                <option value="0.20" selected>20 % (일반 표준 채움)</option>
+                <option value="0.50">50 % (강도 기계부품용)</option>
+                <option value="1.00">100 % (솔리드 내부 가득 채움)</option>
+            </select>
+        </div>
     </div>
 
-    <div class="section-title">2단계: 비용 및 마진 데이터</div>
+    <div class="section-title">Step 2: 재료 물성 및 비즈니스 마진 설계</div>
     <div class="input-group">
-        <label>3D 프린터 재료 종류 선택</label>
+        <label>소재 필라멘트 종류 선택 (기반 물성 정보 포함)</label>
         <select id="materialType">
-            <option value="2000">1. PLA (1kg당 약 2만원 기준 -> 100g당 2,000원)</option>
-            <option value="2700">2. PETG (1kg당 약 2.7만원 기준 -> 100g당 2,700원)</option>
-            <option value="2400">3. ABS (1kg당 약 2.4만원 기준 -> 100g당 2,400원)</option>
-            <option value="4000">4. TPU (1kg당 약 4만원 기준 -> 100g당 4,000원)</option>
+            <option value="2000|PLA">1. PLA (초보자용 / 열변형이 적고 안정적인 기본 소재) -> 100g당 2,000원</option>
+            <option value="2700|PETG">2. PETG (내구성 우수 / 내충격성과 내열성을 지닌 산업재) -> 100g당 2,700원</option>
+            <option value="2400|ABS">3. ABS (고강도 시제품 / 후가공 용이 및 우수한 기계적 물성) -> 100g당 2,400원</option>
+            <option value="4000|TPU">4. TPU (유연한 고무 재질 / 복원력이 높은 탄성 플렉시블 소재) -> 100g당 4,000원</option>
         </select>
     </div>
-    <div class="row">
+    
+    <div class="grid-2">
         <div class="input-group">
-            <label>예상 재료 무게 (g)</label>
-            <input type="number" id="weight" step="0.1" placeholder="예: 50">
-        </div>
-        <div class="input-group">
-            <label>시간당 전기요금 (원)</label>
+            <label>시간당 장비 인프라 전기세 (원)</label>
             <input type="number" id="electricityRate" value="150">
         </div>
-    </div>
-    <div class="input-group">
-        <label>원하는 이익률 (%)</label>
-        <input type="number" id="profitRate" value="30" placeholder="예: 30">
+        <div class="input-group">
+            <label>목표 기준 이익률 (%)</label>
+            <input type="number" id="profitRate" value="30">
+        </div>
     </div>
 
-    <button onclick="runSimulation()">종합 시뮬레이션 시작</button>
+    <button onclick="runSimulation()">종합 연산 및 시뮬레이션 가동</button>
+    <button id="btnPdfDownload" class="btn-pdf" onclick="downloadPDF()">📄 세부 견적 보고서 PDF 다운로드</button>
 
     <div id="result-box">
-        <div class="section-title">최종 분석 결과</div>
+        <div class="section-title">📊 종합 다차원 분석 리포트</div>
         
-        <div class="result-card">
-            <h4>💡 예상 적층 레이어 수</h4>
-            <p id="resLayers">0 층</p>
-        </div>
-        
-        <div class="result-card">
-            <h4>⏱️ 예상 소요 시간</h4>
-            <p id="resTime">0 시간</p>
+        <div class="result-grid">
+            <div class="result-card">
+                <h4>💡 총 가공 적층 레이어 수</h4>
+                <p id="resLayers">0 층</p>
+            </div>
+            
+            <div class="result-card">
+                <h4>⚠️ 리스크 요인 (출력 실패 위험도)</h4>
+                <p id="resRisk">분석 대기</p>
+            </div>
+            
+            <div class="result-card highlight-blue full-width">
+                <h4>⏱️ 임계 소요 시간 알고리즘 예측치</h4>
+                <p id="resTime">0 시간</p>
+            </div>
+
+            <div class="result-card highlight-orange full-width">
+                <h4>🔔 공정 완료 노출 예상 시각</h4>
+                <p id="resEndTime">00:00</p>
+            </div>
+
+            <div class="result-card">
+                <h4>📦 체적 기반 유추 재료 무게</h4>
+                <p id="resWeight">0 g</p>
+            </div>
+            
+            <div class="result-card cost-card">
+                <h4>💰 기본 투입 원가 (재료비 + 전력비)</h4>
+                <p id="resTotalCost">0 원</p>
+            </div>
+            
+            <div class="result-card full-width selling-card">
+                <h4>⭐ 적정 시장 추천 판매 가격</h4>
+                <p id="resSellingPrice">0 원</p>
+            </div>
+
+            <div class="result-card full-width profit-card">
+                <h4>⭐ 비즈니스 모델 기반 예상 순이익</h4>
+                <p id="resPureProfit">0 원</p>
+            </div>
         </div>
 
-        <div class="result-card info-card">
-            <h4>🔔 출력 완료 예상 시각</h4>
-            <p id="resEndTime">00:00</p>
-        </div>
-        
-        <div class="result-card">
-            <h4>💰 예상 원가 (재료비 + 전기세)</h4>
-            <p id="resTotalCost">0 원</p>
-        </div>
-        
-        <div class="result-card success-card">
-            <h4>🔥 추천 판매 가격 [원가 × (1 + 이익률)]</h4>
-            <p id="resSellingPrice">0 원</p>
+        <div class="section-title" style="text-align: center; margin-top:25px;">📊 제조 원가 구성 비율</div>
+        <div class="chart-container">
+            <canvas id="costChart"></canvas>
         </div>
     </div>
 </div>
 
 <script>
-// 페이지가 열릴 때 사용자의 현재 시각을 자동으로 입력해주는 기능
-window.onload = function() {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    document.getElementById('startTime').value = `${hours}:${minutes}`;
-}
+// 전역 변수 설정 (PDF 및 그래프 갱신용 데이터 보관소)
+let g_pdfData = {};
+let g_chartInstance = null;
 
 function runSimulation() {
-    // 1. 데이터 가져오기
-    const modelHeight = parseFloat(document.getElementById('modelHeight').value);
-    const layerHeight = parseFloat(document.getElementById('layerHeight').value);
-    const timePerLayer = parseFloat(document.getElementById('timePerLayer').value);
-    const startTimeVal = document.getElementById('startTime').value;
+    // 1. DOM 내부 입력 매개변수 수집 및 자료형 캐스팅
+    const sizeX = parseFloat(document.getElementById('sizeX').value);
+    const sizeY = parseFloat(document.getElementById('sizeY').value);
+    const sizeZ = parseFloat(document.getElementById('sizeZ').value);
     
-    const unitPrice = parseFloat(document.getElementById('materialType').value);
-    const weight = parseFloat(document.getElementById('weight').value);
+    const qualityData = document.getElementById('printQuality').value.split('|');
+    const layerHeight = parseFloat(qualityData[0]);
+    const timePerLayerBase = parseFloat(qualityData[1]);
+    
+    const infillRate = parseFloat(document.getElementById('infillRate').value);
+    
+    const materialData = document.getElementById('materialType').value.split('|');
+    const unitPrice = parseFloat(materialData[0]);
+    const materialName = materialData[1];
+    
     const electricityRate = parseFloat(document.getElementById('electricityRate').value);
     const profitRate = parseFloat(document.getElementById('profitRate').value);
 
-    // 유효성 검사
-    if (isNaN(modelHeight) || isNaN(layerHeight) || isNaN(timePerLayer) || !startTimeVal || isNaN(weight) || isNaN(electricityRate) || isNaN(profitRate)) {
-        alert("모든 입력 칸을 올바르게 채워주세요.");
+    if (isNaN(sizeX) || isNaN(sizeY) || isNaN(sizeZ) || isNaN(electricityRate) || isNaN(profitRate)) {
+        alert("예측에 필요한 공란이 존재합니다. 규격을 올바르게 채워주세요.");
         return;
     }
 
-    // 2. 시간 예측 알고리즘 연산
-    const totalLayers = Math.floor(modelHeight / layerHeight);
-    const totalSeconds = totalLayers * timePerLayer;
-    const calculatedTime = totalSeconds / 3600; // 시간 단위
+    // --- 수리 알고리즘 1. 형상 분할 레이어 적층수 계산 ---
+    const totalLayers = Math.floor(sizeZ / layerHeight);
+
+    // --- 수리 알고리즘 2. 밀도-공간 융합형 재료 소모량 산출 공식 ---
+    const totalVolumeCC = (sizeX * sizeY * sizeZ) / 1000; 
+    const materialDensity = 1.24; 
+    const calculatedWeight = totalVolumeCC * materialDensity * (0.22 + (infillRate * 0.78));
+
+    // --- 수리 알고리즘 3. 채움 공간 가중 소요시간 예측 알고리즘 ---
+    const infillTimeWeight = 1.0 + (infillRate * 0.55); 
+    const finalTimePerLayer = timePerLayerBase * infillTimeWeight;
+    const calculatedTime = (totalLayers * finalTimePerLayer) / 3600;
     
     const resHours = Math.floor(calculatedTime);
     const resMinutes = Math.round((calculatedTime - resHours) * 60);
 
-    // 3. 완료 예상 시각 계산 알고리즘
-    const startSplit = startTimeVal.split(':');
-    const startHour = parseInt(startSplit[0]);
-    const startMinute = parseInt(startSplit[1]);
-
-    // 시작 시각에 소요 시간(분 단위로 환산)을 더함
-    const totalStartMinutes = startHour * 60 + startMinute;
+    // --- 수리 알고리즘 4. 시계열 타임스탬프 결합 공정종료 시각 계산 ---
+    const now = new Date();
+    const totalStartMinutes = now.getHours() * 60 + now.getMinutes();
     const totalEndMinutes = totalStartMinutes + Math.round(calculatedTime * 60);
     
-    let endHour = Math.floor(totalEndMinutes / 60) % 24; // 24시간 표기법 제한
+    let endHour = Math.floor(totalEndMinutes / 60) % 24;
     let endMinute = totalEndMinutes % 60;
-    
-    // 다음날로 넘어가는지 확인하는 로직
     const isNextDay = Math.floor(totalEndMinutes / 60) >= 24;
+    
     const endHourStr = String(endHour).padStart(2, '0');
     const endMinuteStr = String(endMinute).padStart(2, '0');
     const nextDayText = isNextDay ? "(익일) " : "";
 
-    // 4. 비용 및 판매가 계산 알고리즘
-    const materialCost = weight * (unitPrice / 100);
-    const electricityCost = calculatedTime * electricityRate;
-    const totalCost = materialCost + electricityCost; // 원가
-    
-    // 판매가격 책정 공식: 원가 * (1 + 이익률/100)
-    const sellingPrice = totalCost * (1 + (profitRate / 100));
+    // --- 수리 알고리즘 5. 가동 시간 스케일에 따른 실패 위험 요인 다이어그램 변환 ---
+    const resRisk = document.getElementById('resRisk');
+    if (calculatedTime <= 2) {
+        resRisk.innerText = "🟢 낮음 (안정적인 단시간 공정)";
+        resRisk.className = "risk-low";
+    } else if (calculatedTime > 2 && calculatedTime < 10) {
+        resRisk.innerText = "🟡 보통 (안착 및 수축 유의 단계)";
+        resRisk.className = "risk-medium";
+    } else {
+        resRisk.innerText = "🔴 높음 (베드 이탈 위험/장기 감시 권장)";
+        resRisk.className = "risk-high";
+    }
 
-    // 5. 웹 화면에 결과 반영 및 출력
+    // --- 수리 알고리즘 6. 다차원 재무 구조 계산 공식 변환 ---
+    const materialCost = calculatedWeight * (unitPrice / 100);
+    const electricityCost = calculatedTime * electricityRate;
+    const totalCost = materialCost + electricityCost; 
+    
+    const sellingPrice = totalCost * (1 + (profitRate / 100)); 
+    const pureProfit = sellingPrice - totalCost; 
+
+    // 2. 화면 데이터 동적 바인딩 및 렌더링
     document.getElementById('resLayers').innerText = `${totalLayers.toLocaleString()} 층`;
     document.getElementById('resTime').innerText = `${resHours}시간 ${resMinutes}분 (총 ${calculatedTime.toFixed(2)}시간)`;
     document.getElementById('resEndTime').innerText = `${nextDayText}${endHourStr}시 ${endMinuteStr}분`;
+    document.getElementById('resWeight').innerText = `${calculatedWeight.toFixed(1)} g`;
     document.getElementById('resTotalCost').innerText = `${Math.round(totalCost).toLocaleString()} 원`;
     document.getElementById('resSellingPrice').innerText = `${Math.round(sellingPrice).toLocaleString()} 원`;
+    document.getElementById('resPureProfit').innerText = `${Math.round(pureProfit).toLocaleString()} 원`;
 
-    // 결과 창 보이기
+    // 3. 글로벌 스토리지에 PDF 추출용 데이터 전송 백업
+    g_pdfData = {
+        materialName: materialName,
+        weight: calculatedWeight.toFixed(1),
+        time: `${resHours}시간 ${resMinutes}분`,
+        cost: Math.round(totalCost).toLocaleString(),
+        sell: Math.round(sellingPrice).toLocaleString(),
+        profit: Math.round(pureProfit).toLocaleString(),
+        endTime: `${nextDayText}${endHourStr}:${endMinuteStr}`
+    };
+
+    // 4. 상단 인터페이스 프린터 디바이스 스테이트 스위칭 가시화
+    const statusBadge = document.getElementById('printerStatus');
+    statusBadge.innerText = "Printer Status : COMPLETE";
+    statusBadge.className = "status-badge status-complete";
+
+    // 5. 원형 도넛 차트 동적 생성 및 갱신 프로세스 (Chart.js 리빌드 기법)
+    const ctx = document.getElementById('costChart').getContext('2d');
+    if (g_chartInstance) { g_chartInstance.destroy(); } // 메모리 누수 방지용 인스턴스 파괴
+    
+    g_chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['소재 재료비', '인프라 전력비'],
+            datasets: [{
+                data: [materialCost, electricityCost],
+                backgroundColor: ['#00f0ff', '#ff9900'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { labels: { color: '#a0a0a0', font: { size: 11 } } }
+            },
+            cutout: '65%'
+        }
+    });
+
+    // 6. 감춰진 블록 컨테이너 개방화 및 부드러운 스크롤 타겟 포커싱
     document.getElementById('result-box').style.display = 'block';
+    document.getElementById('btnPdfDownload').style.display = 'block';
     document.getElementById('result-box').scrollIntoView({ behavior: 'smooth' });
+}
+
+// jsPDF 내부 알고리즘 엔진을 활용한 데이터 변환 및 PDF 파일 다운로드 처리 함수
+function downloadPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // 기본 텍스트 폰트 호환성 부재에 대비해 가독성 높은 격자형 벡터 프레임 드로잉 방식 채택
+    doc.setFillColor(21, 16, 42);
+    doc.rect(0, 0, 210, 297, 'F');
+
+    doc.setTextColor(0, 240, 255);
+    doc.setFontSize(22);
+    doc.text("3D PRINTING ESTIMATE REPORT", 20, 30);
+
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.5);
+    doc.line(20, 38, 190, 38);
+
+    doc.setTextColor(230, 230, 240);
+    doc.setFontSize(13);
+    
+    let yPos = 55;
+    const spacing = 12;
+
+    const dataRows = [
+        ["Selected Material Type", g_pdfData.materialName],
+        ["Estimated Model Weight", g_pdfData.weight + " g"],
+        ["Total Processing Time", g_pdfData.time],
+        ["Estimated Production Cost", g_pdfData.cost + " KRW"],
+        ["Recommended Selling Price", g_pdfData.sell + " KRW"],
+        ["Net Target Profit Realized", g_pdfData.profit + " KRW"],
+        ["Estimated Completion Time", g_pdfData.endTime]
+    ];
+
+    dataRows.forEach(([label, value]) => {
+        doc.setTextColor(154, 154, 174);
+        doc.text(label, 25, yPos);
+        doc.setTextColor(255, 255, 255);
+        doc.text(": " + value, 95, yPos);
+        yPos += spacing;
+    });
+
+    doc.setDrawColor(57, 255, 20);
+    doc.line(20, yPos + 10, 190, yPos + 10);
+    
+    doc.setTextColor(57, 255, 20);
+    doc.setFontSize(10);
+    doc.text("Generated by 3D Printing Pre-Simulator System Suite.", 20, yPos + 22);
+
+    // 디바이스 스토리지 파일 이송 저장 액션 실행
+    doc.save(`3D-Printing-Estimate-${g_pdfData.materialName}.pdf`);
 }
 </script>
 
