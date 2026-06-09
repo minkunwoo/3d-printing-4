@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D 프린팅 통합 시뮬레이터 (완료 시각 & 판매가 추가)</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --success-color: #28a745;
+            --info-color: #17a2b8;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: #333; padding: 20px; margin: 0; }
+        .container { max-width: 600px; margin: 30px auto; background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #222; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #666; font-size: 14px; margin-bottom: 25px; }
+        
+        .section-title { font-size: 16px; font-weight: bold; color: var(--primary-color); border-left: 4px solid var(--primary-color); padding-left: 8px; margin: 25px 0 12px 0; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        input:focus, select:focus { border-color: var(--primary-color); outline: none; }
+        
+        .row { display: flex; gap: 15px; }
+        .row .input-group { flex: 1; }
+        
+        button { width: 100%; padding: 14px; background-color: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: background 0.2s; }
+        button:hover { background-color: #0056b3; }
+        
+        #result-box { margin-top: 25px; display: none; }
+        .result-card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 10px; }
+        .result-card h4 { margin: 0 0 8px 0; color: #555; font-size: 14px; }
+        .result-card p { margin: 0; font-size: 18px; font-weight: bold; color: #111; }
+        
+        .info-card { background: #e3f2fd; border: 1px solid #bbdefb; }
+        .info-card h4 { color: #0d47a1; }
+        .info-card p { color: #1565c0; }
+
+        .total-card { background: #fff3e0; border: 1px solid #ffe0b2; }
+        .total-card h4 { color: #e65100; }
+        .total-card p { color: #ef6c00; }
+
+        .success-card { background: #e8f5e9; border: 1px solid #c8e6c9; }
+        .success-card h4 { color: #2e7d32; }
+        .success-card p { color: var(--success-color); font-size: 24px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>3D 프린팅 사전 시뮬레이터</h2>
+    <div class="subtitle">진로 수행평가: 시간·비용 예측 및 마진 분석 프로그램</div>
+    
+    <div class="section-title">1단계: 출력 시간 예측 데이터</div>
+    <div class="input-group">
+        <label>출력물 총 높이 (mm)</label>
+        <input type="number" id="modelHeight" step="0.1" placeholder="예: 100">
+    </div>
+    <div class="input-group">
+        <label>레이어 두께 / 적층 높이 (mm)</label>
+        <input type="number" id="layerHeight" step="0.01" value="0.2" placeholder="보통 0.2mm">
+    </div>
+    <div class="input-group">
+        <label>레이어 1층당 평균 소요 시간 (초)</label>
+        <input type="number" id="timePerLayer" step="0.1" placeholder="예: 15">
+    </div>
+    <div class="input-group">
+        <label>작업 시작 시각 (현재 시각)</label>
+        <input type="time" id="startTime">
+    </div>
+
+    <div class="section-title">2단계: 비용 및 마진 데이터</div>
+    <div class="input-group">
+        <label>3D 프린터 재료 종류 선택</label>
+        <select id="materialType">
+            <option value="2000">1. PLA (1kg당 약 2만원 기준 -> 100g당 2,000원)</option>
+            <option value="2700">2. PETG (1kg당 약 2.7만원 기준 -> 100g당 2,700원)</option>
+            <option value="2400">3. ABS (1kg당 약 2.4만원 기준 -> 100g당 2,400원)</option>
+            <option value="4000">4. TPU (1kg당 약 4만원 기준 -> 100g당 4,000원)</option>
+        </select>
+    </div>
+    <div class="row">
+        <div class="input-group">
+            <label>예상 재료 무게 (g)</label>
+            <input type="number" id="weight" step="0.1" placeholder="예: 50">
+        </div>
+        <div class="input-group">
+            <label>시간당 전기요금 (원)</label>
+            <input type="number" id="electricityRate" value="150">
+        </div>
+    </div>
+    <div class="input-group">
+        <label>원하는 이익률 (%)</label>
+        <input type="number" id="profitRate" value="30" placeholder="예: 30">
+    </div>
+
+    <button onclick="runSimulation()">종합 시뮬레이션 시작</button>
+
+    <div id="result-box">
+        <div class="section-title">최종 분석 결과</div>
+        
+        <div class="result-card">
+            <h4>💡 예상 적층 레이어 수</h4>
+            <p id="resLayers">0 층</p>
+        </div>
+        
+        <div class="result-card">
+            <h4>⏱️ 예상 소요 시간</h4>
+            <p id="resTime">0 시간</p>
+        </div>
+
+        <div class="result-card info-card">
+            <h4>🔔 출력 완료 예상 시각</h4>
+            <p id="resEndTime">00:00</p>
+        </div>
+        
+        <div class="result-card">
+            <h4>💰 예상 원가 (재료비 + 전기세)</h4>
+            <p id="resTotalCost">0 원</p>
+        </div>
+        
+        <div class="result-card success-card">
+            <h4>🔥 추천 판매 가격 [원가 × (1 + 이익률)]</h4>
+            <p id="resSellingPrice">0 원</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// 페이지가 열릴 때 사용자의 현재 시각을 자동으로 입력해주는 기능
+window.onload = function() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('startTime').value = `${hours}:${minutes}`;
+}
+
+function runSimulation() {
+    // 1. 데이터 가져오기
+    const modelHeight = parseFloat(document.getElementById('modelHeight').value);
+    const layerHeight = parseFloat(document.getElementById('layerHeight').value);
+    const timePerLayer = parseFloat(document.getElementById('timePerLayer').value);
+    const startTimeVal = document.getElementById('startTime').value;
+    
+    const unitPrice = parseFloat(document.getElementById('materialType').value);
+    const weight = parseFloat(document.getElementById('weight').value);
+    const electricityRate = parseFloat(document.getElementById('electricityRate').value);
+    const profitRate = parseFloat(document.getElementById('profitRate').value);
+
+    // 유효성 검사
+    if (isNaN(modelHeight) || isNaN(layerHeight) || isNaN(timePerLayer) || !startTimeVal || isNaN(weight) || isNaN(electricityRate) || isNaN(profitRate)) {
+        alert("모든 입력 칸을 올바르게 채워주세요.");
+        return;
+    }
+
+    // 2. 시간 예측 알고리즘 연산
+    const totalLayers = Math.floor(modelHeight / layerHeight);
+    const totalSeconds = totalLayers * timePerLayer;
+    const calculatedTime = totalSeconds / 3600; // 시간 단위
+    
+    const resHours = Math.floor(calculatedTime);
+    const resMinutes = Math.round((calculatedTime - resHours) * 60);
+
+    // 3. 완료 예상 시각 계산 알고리즘
+    const startSplit = startTimeVal.split(':');
+    const startHour = parseInt(startSplit[0]);
+    const startMinute = parseInt(startSplit[1]);
+
+    // 시작 시각에 소요 시간(분 단위로 환산)을 더함
+    const totalStartMinutes = startHour * 60 + startMinute;
+    const totalEndMinutes = totalStartMinutes + Math.round(calculatedTime * 60);
+    
+    let endHour = Math.floor(totalEndMinutes / 60) % 24; // 24시간 표기법 제한
+    let endMinute = totalEndMinutes % 60;
+    
+    // 다음날로 넘어가는지 확인하는 로직
+    const isNextDay = Math.floor(totalEndMinutes / 60) >= 24;
+    const endHourStr = String(endHour).padStart(2, '0');
+    const endMinuteStr = String(endMinute).padStart(2, '0');
+    const nextDayText = isNextDay ? "(익일) " : "";
+
+    // 4. 비용 및 판매가 계산 알고리즘
+    const materialCost = weight * (unitPrice / 100);
+    const electricityCost = calculatedTime * electricityRate;
+    const totalCost = materialCost + electricityCost; // 원가
+    
+    // 판매가격 책정 공식: 원가 * (1 + 이익률/100)
+    const sellingPrice = totalCost * (1 + (profitRate / 100));
+
+    // 5. 웹 화면에 결과 반영 및 출력
+    document.getElementById('resLayers').innerText = `${totalLayers.toLocaleString()} 층`;
+    document.getElementById('resTime').innerText = `${resHours}시간 ${resMinutes}분 (총 ${calculatedTime.toFixed(2)}시간)`;
+    document.getElementById('resEndTime').innerText = `${nextDayText}${endHourStr}시 ${endMinuteStr}분`;
+    document.getElementById('resTotalCost').innerText = `${Math.round(totalCost).toLocaleString()} 원`;
+    document.getElementById('resSellingPrice').innerText = `${Math.round(sellingPrice).toLocaleString()} 원`;
+
+    // 결과 창 보이기
+    document.getElementById('result-box').style.display = 'block';
+    document.getElementById('result-box').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>
