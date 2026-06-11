@@ -390,7 +390,8 @@ function runSimulation() {
 }
 
 // jsPDF 내부 알고리즘 엔진을 활용한 데이터 변환 및 PDF 파일 다운로드 처리 함수
-
+console.log(g_pdfData.time);
+alert(g_pdfData.time);
 function downloadPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
