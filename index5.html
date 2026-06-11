@@ -391,7 +391,6 @@ function runSimulation() {
 
 // jsPDF 내부 알고리즘 엔진을 활용한 데이터 변환 및 PDF 파일 다운로드 처리 함수
 
-</script>
 function downloadPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -442,5 +441,6 @@ function downloadPDF() {
     // 디바이스 스토리지 파일 이송 저장 액션 실행
     doc.save(`3D-Printing-Estimate-${g_pdfData.materialName}.pdf`);
 }
+</script>
 </body>
 </html>
