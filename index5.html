@@ -413,15 +413,19 @@ function downloadPDF() {
     let yPos = 55;
     const spacing = 12;
 
-    const dataRows = [
-        ["Selected Material Type", g_pdfData.materialName],
-        ["Estimated Model Weight", g_pdfData.weight + " g"],
-        ["Total Processing Time", g_pdfData.time],
-        ["Estimated Production Cost", g_pdfData.cost + " KRW"],
-        ["Recommended Selling Price", g_pdfData.sell + " KRW"],
-        ["Net Target Profit Realized", g_pdfData.profit + " KRW"],
-        ["Estimated Completion Time", g_pdfData.endTime]
-    ];
+    // 💡 이 코드로 통째로 덮어쓰기 하세요!
+const engTime = g_pdfData.time.replace('시간', 'h').replace('분', 'm');
+const engEndTime = g_pdfData.endTime.replace('(익일)', '(Next Day)').replace('시', ':').replace('분', '');
+
+const dataRows = [
+    ["Selected Material Type", g_pdfData.materialName],
+    ["Estimated Model Weight", g_pdfData.weight + " g"],
+    ["Total Processing Time", engTime], // 👈 깨지지 않도록 영문 단위로 변경
+    ["Estimated Production Cost", g_pdfData.cost + " KRW"],
+    ["Recommended Selling Price", g_pdfData.sell + " KRW"],
+    ["Net Target Profit Realized", g_pdfData.profit + " KRW"],
+    ["Estimated Completion Time", engEndTime] // 👈 완료 시각의 한글도 깔끔하게 정리
+];
 
     dataRows.forEach(([label, value]) => {
         doc.setTextColor(154, 154, 174);
